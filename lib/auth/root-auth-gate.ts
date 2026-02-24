@@ -9,6 +9,8 @@ type RootAuthGateState = {
   redirectTo: '/sign-in' | '/(tabs)' | null;
 };
 
+const AUTH_ROUTES = new Set(['/sign-in', '/sign-up']);
+
 export function getRootAuthGateState({
   isLoaded,
   isSignedIn,
@@ -21,14 +23,14 @@ export function getRootAuthGateState({
     };
   }
 
-  if (!isSignedIn && pathname !== '/sign-in') {
+  if (!isSignedIn && !AUTH_ROUTES.has(pathname)) {
     return {
       shouldRenderStack: true,
       redirectTo: '/sign-in',
     };
   }
 
-  if (isSignedIn && pathname === '/sign-in') {
+  if (isSignedIn && AUTH_ROUTES.has(pathname)) {
     return {
       shouldRenderStack: true,
       redirectTo: '/(tabs)',

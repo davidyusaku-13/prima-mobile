@@ -1,4 +1,4 @@
-import { useSSO, useSignIn } from '@clerk/clerk-expo';
+import { useSSO, useSignUp } from '@clerk/clerk-expo';
 import * as AuthSession from 'expo-auth-session';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -7,17 +7,19 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { PanelCard } from '@/components/panel-card';
 import { ScreenShell } from '@/components/screen-shell';
 import {
-  getMessageFromUnknownError,
-  getSignInStatusErrorMessage,
-  validateSignInFields,
-} from '@/lib/auth/sign-in';
+  getMessageFromUnknownSignUpError,
+  getSignUpStatusErrorMessage,
+  validateSignUpFields,
+} from '@/lib/auth/sign-up';
 import { PrimaPalette, PrimaRadius, PrimaSpacing } from '@/lib/theme/tokens';
 
-export default function SignInScreen() {
-  const { isLoaded, setActive, signIn } = useSignIn();
+export default function SignUpScreen() {
+  const { isLoaded, setActive, signUp } = useSignUp();
   const { startSSOFlow } = useSSO();
   const router = useRouter();
 
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -30,22 +32,12 @@ export default function SignInScreen() {
     }
   };
 
-  const handleUsernameChange = (value: string) => {
-    clearError();
-    setUsername(value);
-  };
-
-  const handlePasswordChange = (value: string) => {
-    clearError();
-    setPassword(value);
-  };
-
-  const handleSignIn = async () => {
+  const handleSignUp = async () => {
     if (!isLoaded || isSubmitting || isSubmittingGoogle) {
       return;
     }
 
-    const fieldValidationError = validateSignInFields(username, password);
+    const fieldValidationError = validateSignUpFields(firstName, lastName, username, password);
     if (fieldValidationError) {
       setErrorMessage(fieldValidationError);
       return;
@@ -55,32 +47,34 @@ export default function SignInScreen() {
     setErrorMessage(null);
 
     try {
-      const result = await signIn.create({
-        identifier: username.trim(),
+      const result = await signUp.create({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        username: username.trim(),
         password,
       });
 
-      const statusError = getSignInStatusErrorMessage(result.status);
+      if (result.createdSessionId) {
+        await setActive({ session: result.createdSessionId });
+        router.replace('/(tabs)');
+        return;
+      }
+
+      const statusError = getSignUpStatusErrorMessage(result.status);
       if (statusError) {
         setErrorMessage(statusError);
         return;
       }
 
-      if (!result.createdSessionId) {
-        setErrorMessage('Sign-in succeeded, but no session was created. Please try signing in again.');
-        return;
-      }
-
-      await setActive({ session: result.createdSessionId });
-      router.replace('/(tabs)');
+      setErrorMessage('Sign-up succeeded, but no session was created. Please try signing up again.');
     } catch (error) {
-      setErrorMessage(getMessageFromUnknownError(error));
+      setErrorMessage(getMessageFromUnknownSignUpError(error));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignUp = async () => {
     if (!isLoaded || isSubmitting || isSubmittingGoogle) {
       return;
     }
@@ -105,22 +99,54 @@ export default function SignInScreen() {
         return;
       }
 
-      if (result.signIn) {
-        const statusError = getSignInStatusErrorMessage(result.signIn.status);
+      if (result.signUp) {
+        const updatePayload: { firstName?: string; lastName?: string; username?: string } = {};
+        const trimmedFirstName = firstName.trim();
+        const trimmedLastName = lastName.trim();
+        const trimmedUsername = username.trim();
+
+        if (trimmedFirstName.length > 0) {
+          updatePayload.firstName = trimmedFirstName;
+        }
+
+        if (trimmedLastName.length > 0) {
+          updatePayload.lastName = trimmedLastName;
+        }
+
+        if (trimmedUsername.length > 0) {
+          updatePayload.username = trimmedUsername;
+        }
+
+        if (Object.keys(updatePayload).length > 0) {
+          const updatedSignUp = await result.signUp.update(updatePayload);
+          if (updatedSignUp.createdSessionId) {
+            if (result.setActive) {
+              await result.setActive({ session: updatedSignUp.createdSessionId });
+            } else {
+              await setActive({ session: updatedSignUp.createdSessionId });
+            }
+
+            router.replace('/(tabs)');
+            return;
+          }
+
+          const updatedStatusError = getSignUpStatusErrorMessage(updatedSignUp.status);
+          if (updatedStatusError) {
+            setErrorMessage(updatedStatusError);
+            return;
+          }
+        }
+
+        const statusError = getSignUpStatusErrorMessage(result.signUp.status);
         if (statusError) {
           setErrorMessage(statusError);
           return;
         }
       }
 
-      if (result.signUp) {
-        setErrorMessage('Google account is not registered yet. Please continue from sign-up.');
-        return;
-      }
-
-      setErrorMessage('Google sign-in could not be completed. Please try again.');
+      setErrorMessage('Google sign-up could not be completed. Please try again.');
     } catch (error) {
-      setErrorMessage(getMessageFromUnknownError(error));
+      setErrorMessage(getMessageFromUnknownSignUpError(error));
     } finally {
       setIsSubmittingGoogle(false);
     }
@@ -130,8 +156,40 @@ export default function SignInScreen() {
     <ScreenShell contentStyle={styles.content}>
       <PanelCard style={styles.card}>
         <View style={styles.header}>
-          <Text style={styles.title}>Sign in to Prima</Text>
-          <Text style={styles.subtitle}>Use your username or continue with Google.</Text>
+          <Text style={styles.title}>Create your Prima account</Text>
+          <Text style={styles.subtitle}>Sign up with your profile details or continue with Google.</Text>
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>First name</Text>
+          <TextInput
+            autoCapitalize="words"
+            onChangeText={(value) => {
+              clearError();
+              setFirstName(value);
+            }}
+            placeholder="Jane"
+            placeholderTextColor={PrimaPalette.textMuted}
+            style={styles.input}
+            textContentType="givenName"
+            value={firstName}
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Last name</Text>
+          <TextInput
+            autoCapitalize="words"
+            onChangeText={(value) => {
+              clearError();
+              setLastName(value);
+            }}
+            placeholder="Doe"
+            placeholderTextColor={PrimaPalette.textMuted}
+            style={styles.input}
+            textContentType="familyName"
+            value={lastName}
+          />
         </View>
 
         <View style={styles.fieldGroup}>
@@ -139,7 +197,10 @@ export default function SignInScreen() {
           <TextInput
             autoCapitalize="none"
             autoCorrect={false}
-            onChangeText={handleUsernameChange}
+            onChangeText={(value) => {
+              clearError();
+              setUsername(value);
+            }}
             placeholder="your-username"
             placeholderTextColor={PrimaPalette.textMuted}
             style={styles.input}
@@ -153,12 +214,15 @@ export default function SignInScreen() {
           <TextInput
             autoCapitalize="none"
             autoCorrect={false}
-            onChangeText={handlePasswordChange}
-            placeholder="Your password"
+            onChangeText={(value) => {
+              clearError();
+              setPassword(value);
+            }}
+            placeholder="Create a password"
             placeholderTextColor={PrimaPalette.textMuted}
             secureTextEntry
             style={styles.input}
-            textContentType="password"
+            textContentType="newPassword"
             value={password}
           />
         </View>
@@ -169,7 +233,7 @@ export default function SignInScreen() {
           <Pressable
             accessibilityRole="button"
             disabled={!isLoaded || isSubmitting || isSubmittingGoogle}
-            onPress={handleSignIn}
+            onPress={handleSignUp}
             style={({ pressed }) => [
               styles.submitButton,
               (!isLoaded || isSubmitting || isSubmittingGoogle) && styles.submitButtonDisabled,
@@ -178,14 +242,14 @@ export default function SignInScreen() {
             {isSubmitting ? (
               <ActivityIndicator color={PrimaPalette.surface} />
             ) : (
-              <Text style={styles.submitButtonText}>Sign in</Text>
+              <Text style={styles.submitButtonText}>Sign up</Text>
             )}
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
             disabled={!isLoaded || isSubmitting || isSubmittingGoogle}
-            onPress={handleGoogleSignIn}
+            onPress={handleGoogleSignUp}
             style={({ pressed }) => [
               styles.secondaryButton,
               (!isLoaded || isSubmitting || isSubmittingGoogle) && styles.submitButtonDisabled,
@@ -201,9 +265,9 @@ export default function SignInScreen() {
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.replace('/sign-up')}
+          onPress={() => router.replace('/sign-in')}
           style={styles.inlineLink}>
-          <Text style={styles.inlineLinkText}>Need an account? Sign up</Text>
+          <Text style={styles.inlineLinkText}>Already have an account? Sign in</Text>
         </Pressable>
       </PanelCard>
     </ScreenShell>
@@ -222,7 +286,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: PrimaPalette.textPrimary,
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
@@ -254,15 +318,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
+  buttonGroup: {
+    gap: 10,
+  },
   submitButton: {
     alignItems: 'center',
     backgroundColor: PrimaPalette.primaryEnd,
     borderRadius: PrimaRadius.card,
     minHeight: 48,
     justifyContent: 'center',
-  },
-  buttonGroup: {
-    gap: 10,
   },
   secondaryButton: {
     alignItems: 'center',

@@ -42,8 +42,10 @@ Useful scripts:
 
 ## Auth and routing behavior
 
-- Signed-out users are redirected to `/sign-in`.
+- Signed-out users are redirected to `/sign-in`, and can navigate between `/sign-in` and `/sign-up`.
 - Signed-in users are routed to `/(tabs)`.
+- Sign-in supports `username + password` or Google OAuth.
+- Sign-up requires first name, last name, username, and password, and also supports Google OAuth.
 - Admin tab visibility is role-gated by probing `/admin` with the Clerk bearer token.
 - Non-admin responses (`401`/`403`) hide admin tabs gracefully; other failures surface as retryable errors on admin screens.
 

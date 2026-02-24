@@ -42,12 +42,38 @@ describe('getRootAuthGateState', () => {
     });
   });
 
+  it('keeps signed-out users on sign-up', () => {
+    expect(
+      getRootAuthGateState({
+        isLoaded: true,
+        isSignedIn: false,
+        pathname: '/sign-up',
+      })
+    ).toEqual({
+      shouldRenderStack: true,
+      redirectTo: null,
+    });
+  });
+
   it('redirects signed-in users away from sign-in', () => {
     expect(
       getRootAuthGateState({
         isLoaded: true,
         isSignedIn: true,
         pathname: '/sign-in',
+      })
+    ).toEqual({
+      shouldRenderStack: true,
+      redirectTo: '/(tabs)',
+    });
+  });
+
+  it('redirects signed-in users away from sign-up', () => {
+    expect(
+      getRootAuthGateState({
+        isLoaded: true,
+        isSignedIn: true,
+        pathname: '/sign-up',
       })
     ).toEqual({
       shouldRenderStack: true,

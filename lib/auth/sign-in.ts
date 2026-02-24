@@ -52,9 +52,9 @@ export function getMessageFromUnknownError(error: unknown): string {
   return error.errors?.[0]?.longMessage ?? error.errors?.[0]?.message ?? DEFAULT_SIGN_IN_ERROR_MESSAGE;
 }
 
-export function validateSignInFields(emailAddress: string, password: string): string | null {
-  if (emailAddress.trim().length === 0) {
-    return 'Email is required.';
+export function validateSignInFields(username: string, password: string): string | null {
+  if (username.trim().length === 0) {
+    return 'Username is required.';
   }
 
   if (password.trim().length === 0) {

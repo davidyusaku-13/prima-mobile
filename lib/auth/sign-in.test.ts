@@ -55,8 +55,8 @@ describe('getMessageFromUnknownError', () => {
 });
 
 describe('validateSignInFields', () => {
-  it('requires email address', () => {
-    expect(validateSignInFields('   ', 'valid-password')).toBe('Email is required.');
+  it('requires username', () => {
+    expect(validateSignInFields('   ', 'valid-password')).toBe('Username is required.');
   });
 
   it('requires password', () => {
