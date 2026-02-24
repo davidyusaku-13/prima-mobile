@@ -22,6 +22,11 @@ export default function AdminUsersScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const latestRequestIdRef = useRef(0);
+  const getTokenRef = useRef(getToken);
+
+  useEffect(() => {
+    getTokenRef.current = getToken;
+  }, [getToken]);
 
   const loadUsers = useCallback(async () => {
     const requestId = latestRequestIdRef.current + 1;
@@ -30,7 +35,9 @@ export default function AdminUsersScreen() {
     setIsLoading(true);
     setError(null);
 
-    const api = createAdminApi({ getToken });
+    const api = createAdminApi({
+      getToken: () => getTokenRef.current(),
+    });
 
     try {
       const result = await api.getUsers();
@@ -53,7 +60,7 @@ export default function AdminUsersScreen() {
 
       setIsLoading(false);
     }
-  }, [getToken]);
+  }, []);
 
   useEffect(() => {
     void loadUsers();

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { createAdminApi, mapAdminUnauthorized } from '@/lib/api/admin';
 import { ApiClientError } from '@/lib/api/types';
@@ -50,10 +50,22 @@ export function useAdminAccess({
     error: null,
   });
 
+  const getTokenRef = useRef(getToken);
+
+  useEffect(() => {
+    getTokenRef.current = getToken;
+  }, [getToken]);
+
   const probeAdminAccess = useCallback(async () => {
     if (!shouldProbeAdminAccess({ isLoaded, userId, hasAdminTab })) {
       if (!isLoaded && hasAdminTab) {
-        setState((current) => ({ ...current, isLoading: true }));
+        setState((current) => {
+          if (current.isLoading) {
+            return current;
+          }
+
+          return { ...current, isLoading: true };
+        });
         return;
       }
 
@@ -61,9 +73,17 @@ export function useAdminAccess({
       return;
     }
 
-    setState((current) => ({ ...current, isLoading: true, error: null }));
+    setState((current) => {
+      if (current.isLoading && current.error === null) {
+        return current;
+      }
 
-    const adminApi = createAdminApi({ getToken });
+      return { ...current, isLoading: true, error: null };
+    });
+
+    const adminApi = createAdminApi({
+      getToken: () => getTokenRef.current(),
+    });
 
     try {
       await adminApi.getAdmin();
@@ -80,7 +100,7 @@ export function useAdminAccess({
         error: error instanceof Error ? error.message : 'Unable to verify admin access',
       });
     }
-  }, [getToken, hasAdminTab, isLoaded, userId]);
+  }, [hasAdminTab, isLoaded, userId]);
 
   useEffect(() => {
     void probeAdminAccess();
