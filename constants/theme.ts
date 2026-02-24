@@ -1,30 +1,56 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
+import { PrimaPalette } from '@/lib/theme/tokens';
+
+const tintColorLight = PrimaPalette.primaryStart;
 const tintColorDark = '#fff';
 
+type ThemeColorName =
+  | 'text'
+  | 'background'
+  | 'tint'
+  | 'icon'
+  | 'tabIconDefault'
+  | 'tabIconSelected'
+  | 'surface'
+  | 'border'
+  | 'primary'
+  | 'primaryStrong'
+  | 'backgroundWashEnd';
+
+type ThemeColorMap = Record<ThemeColorName, string>;
+
+const lightColors: ThemeColorMap = {
+  text: PrimaPalette.textPrimary,
+  background: PrimaPalette.backgroundWashStart,
+  tint: tintColorLight,
+  icon: PrimaPalette.textMuted,
+  tabIconDefault: PrimaPalette.textMuted,
+  tabIconSelected: tintColorLight,
+  surface: PrimaPalette.surface,
+  border: PrimaPalette.border,
+  primary: PrimaPalette.primaryStart,
+  primaryStrong: PrimaPalette.primaryEnd,
+  backgroundWashEnd: PrimaPalette.backgroundWashEnd,
+};
+
+const darkColors: ThemeColorMap = {
+  text: '#ECEDEE',
+  background: '#151718',
+  tint: tintColorDark,
+  icon: '#9BA1A6',
+  tabIconDefault: '#9BA1A6',
+  tabIconSelected: tintColorDark,
+  surface: '#1d2125',
+  border: '#2e3846',
+  primary: PrimaPalette.primaryStart,
+  primaryStrong: PrimaPalette.primaryEnd,
+  backgroundWashEnd: '#1b1f24',
+};
+
 export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-  },
+  light: lightColors,
+  dark: darkColors,
 };
 
 export const Fonts = Platform.select({

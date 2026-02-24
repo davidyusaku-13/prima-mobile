@@ -1,50 +1,55 @@
-# Welcome to your Expo app 👋
+# Prima Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo Router mobile client for Prima, with Clerk authentication and admin endpoint integration.
 
-## Get started
+## Prerequisites
 
-1. Install dependencies
+- Bun installed (`bun --version`)
+- Expo tooling (`bunx expo --version`)
+- A running backend API reachable from your device/emulator
+- Clerk app credentials
 
-   ```bash
-   npm install
-   ```
+## Environment variables
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Create a `.env` file in `mobile/` with:
 
 ```bash
-npm run reset-project
+EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+EXPO_PUBLIC_API_URL=http://localhost:8080
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Notes:
 
-## Learn more
+- `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` is required at startup. The app fails fast if missing.
+- `EXPO_PUBLIC_API_URL` is required for admin API probes and admin tab data (`/admin`, `/admin/health`, `/admin/users`).
+- For physical devices, use a LAN-accessible backend URL (not `localhost`).
 
-To learn more about developing your project with Expo, look at the following resources:
+## Install and run
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+bun install
+bun run start
+```
 
-## Join the community
+Useful scripts:
 
-Join our community of developers creating universal apps.
+- `bun run android`
+- `bun run ios`
+- `bun run web`
+- `bun run lint`
+- `bun test`
+- `bunx tsc --noEmit`
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Auth and routing behavior
+
+- Signed-out users are redirected to `/sign-in`.
+- Signed-in users are routed to `/(tabs)`.
+- Admin tab visibility is role-gated by probing `/admin` with the Clerk bearer token.
+- Non-admin responses (`401`/`403`) hide admin tabs gracefully; other failures surface as retryable errors on admin screens.
+
+## Project structure
+
+- `app/` - Expo Router routes (tabs, sign-in)
+- `components/` - shared UI components used by current screens
+- `hooks/` - auth and admin-access hooks
+- `lib/api/` - typed API client and admin endpoint adapters
